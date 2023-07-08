@@ -1,0 +1,54 @@
+import os
+import subprocess
+import time
+import serial
+
+# Export environment variables
+os.environ['XAUTHORITY'] = '/home/pi/.Xauthority'
+os.environ['DISPLAY'] = ':0'
+
+# Serial configuration
+ser = serial.Serial('/dev/serial0', 115200)
+
+def simulate_key_press(key):
+    subprocess.run(['xdotool', 'key', key])
+
+try:
+    last_input_time = 0
+    delay_duration = 0.3  # Set the desired delay duration in seconds
+
+    while True:
+        # Read the serial event
+        line = ser.readline().strip().decode('utf-8')
+        print(line)  # Print the received data to the console
+
+        current_time = time.time()
+        elapsed_time = current_time - last_input_time
+
+        if elapsed_time > delay_duration:
+            if line == '1':
+                simulate_key_press('1')
+            elif line == '2':
+                simulate_key_press('2')
+            elif line == '3':
+                simulate_key_press('3')
+            elif line == '4':
+                simulate_key_press('4')
+            elif line == '5':
+                simulate_key_press('5')
+            elif line == 'h':
+                simulate_key_press('h')
+            elif line == 'n':
+                simulate_key_press('n')
+            elif line == 'v':
+                simulate_key_press('v')
+            elif line == 'x':
+                simulate_key_press('x')
+            elif line == 'c':
+                simulate_key_press('c')
+
+            last_input_time = current_time
+
+except KeyboardInterrupt:
+    # Stop the script gracefully when Ctrl+C is pressed
+    ser.close()

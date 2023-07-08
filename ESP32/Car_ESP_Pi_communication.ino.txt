@@ -1,0 +1,107 @@
+#include <CAN.h>
+
+#define TX_GPIO_NUM 5  // Connects to CTX
+#define RX_GPIO_NUM 4  // Connects to CRX
+#define CAN_BITRATE 250E3  // Set the CAN bitrate to 125 kbit/s
+
+
+
+void setup() {
+  Serial.begin(115200, SERIAL_8N1, 16, 17);  // Initialize Serial1 with the desired baud rate and pin numbers;
+  while (!Serial);
+  delay(1000);
+  Serial.println("CAN Receiver/Receiver");
+
+  // Set the pins
+  CAN.setPins(RX_GPIO_NUM, TX_GPIO_NUM);
+
+  // Start the CAN bus at the specified bitrate
+  if (!CAN.begin(CAN_BITRATE)) {
+    Serial.println("Starting CAN failed!");
+    while (1);
+  }
+  else {
+    Serial.println("CAN Initialized");
+  }
+
+  // Clear the CAN receive buffer
+  while (CAN.available()) {
+    CAN.read();
+  }
+}
+
+void loop() {
+  canReceiver();  
+}
+
+void canReceiver() {
+
+  // Try to parse packet
+  int packetSize = CAN.parsePacket();
+  if (packetSize) {
+    // Received a packet
+    unsigned long packetId = CAN.packetId();
+
+    // Filter for specific IDs (e.g., 0x2803008 - CCM (valgus), 0x03200408 - CEM (kast), 0x0131726c - SWM (nupud) 0x04000002, 0x00400066, 0x0400066)
+    if (
+      // packetId == 0x3200408 || 
+      packetId == 0x131726C
+    ) {
+      // Print packet ID
+      //Serial.print("0x");
+      //Serial.print(packetId, HEX);
+      //Serial.print(" ");
+
+      // Check if the packet is an extended CAN message
+      if (CAN.packetExtended()) {
+        //Serial.print("Extended ");
+      }
+
+      // Skip the first 6 bytes
+      for (int i = 0; i < 6; i++) {
+        CAN.read();
+      }
+
+      // Extract the seventh and eighth bytes
+      byte byte7 = CAN.read();
+      byte byte8 = CAN.read();
+
+      // Process the extracted bytes
+      if ((byte7 & 0xF0) == 0x10) {
+        Serial.println("h");
+        
+      } else if ((byte7 & 0xF0) == 0x20) {
+        Serial.println("5");
+      }
+
+      if ((byte7 & 0x0F) == 0x08) {
+        Serial.println("1");
+        
+      } else if ((byte7 & 0x0F) == 0x04) {
+        Serial.println("2");
+      } else if ((byte7 & 0x0F) == 0x02) {
+        Serial.println("3");
+      } else if ((byte7 & 0x0F) == 0x01) {
+        Serial.println("4");
+      }
+
+      if ((byte8 & 0xF0) == 0x10) {
+        Serial.println("c");
+      } else if ((byte8 & 0xF0) == 0x20) {
+        Serial.println("x");
+      }
+
+      if ((byte8 & 0x0F) == 0x0D) {
+        Serial.println("n");
+      } else if ((byte8 & 0x0F) == 0x0E) {
+        Serial.println("v");
+      }
+    }
+    else {
+      // Skip reading and processing the remaining bytes of the packet
+      while (packetSize--) {
+        CAN.read();
+      }
+    }
+  }
+}
